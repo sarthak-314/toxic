@@ -7,6 +7,7 @@ Startup script to run in the beggining of every Jupyter Notebook for the competi
 """
 
 # Commonly Used Libraries
+from collections import Counter, defaultdict
 from functools import partial
 from termcolor import colored
 from tqdm.auto import tqdm
@@ -25,7 +26,6 @@ from sklearn.utils.class_weight import compute_class_weight
 from sklearn.model_selection import train_test_split
 from dataclasses import dataclass, asdict
 from distutils.dir_util import copy_tree
-from collections import defaultdict
 import matplotlib.pyplot as plt
 from IPython import get_ipython
 from PIL import Image
@@ -59,7 +59,17 @@ except:
     os.system('pip install -q omegaconf')
     from omegaconf import OmegaConf
 
+# Competition Specific Transformers Setup
+print('Installing transformers and datasets')
+os.system('pip install -q --upgrade git+https://github.com/huggingface/transformers')
+os.system('pip install -q --upgrade git+https://github.com/huggingface/datasets')
 
+import transformers, datasets
+from transformers import TFAutoModel, TFAutoModelForQuestionAnswering, AutoTokenizer
+from datasets import concatenate_datasets, load_dataset
+
+
+# Setup Jupyter Notebook
 def _setup_jupyter_notebook():
     from IPython.core.interactiveshell import InteractiveShell
     InteractiveShell.ast_node_interactivity = 'all'
