@@ -40,10 +40,14 @@ import cv2
 import gc
 import wandb
 
+import tensorflow as tf
+import torch
+
 from IPython.core.magic import register_line_cell_magic
 from IPython.display import display, Markdown
 from IPython.display import clear_output
 from IPython import get_ipython
+
 
 # Package Imports
 from .core import (
@@ -82,10 +86,22 @@ def _setup_jupyter_notebook():
         print('could not load ipython magic extensions')
 _setup_jupyter_notebook()
 
-
 def _ignore_deprecation_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 _ignore_deprecation_warnings()
+
+def set_seed(seed=42):
+    if seed is None:
+        print('Skipping setting seed')
+        return
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    # When running on the CuDNN backend, two further options must be set
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    # Set a fixed value for the hash seed
+    os.environ['PYTHONHASHSEED'] = str(seed)
 
 
 # Startup Notebook Functions
@@ -117,6 +133,16 @@ def hyperparameters(_, cell):
     # Load the YAML file into the variable HP
     HP = OmegaConf.load('experiment.yaml')
     get_ipython().user_ns['HP'] = HP
+
+def load_weights_from_wandb(model, weights):
+    if weights is None: 
+        print('Not loading weights from wandb')
+        return
+    
+    weights_file, run_name = weights
+    print('Restoring weights from run', run_name)
+    wandb.restore(weights_file, run_name)
+    model.load_weights(weights_file)
 
 # Competition Specific Constants & Functions
 COMP_NAME = 'jigsaw-toxic-severity-rating'
