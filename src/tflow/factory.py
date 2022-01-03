@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import wandb
 import math
 
-from ..core import WORKING_DIR, red, green
+from ..core import WORKING_DIR, red, green, blue
 
 
 
