@@ -27,6 +27,14 @@ def optimizer_factory(kwargs, lr_scheduler):
     if kwargs.use_lookahead:
         print(red('Using Lookahead'))
         optimizer = tfa.optimizers.Lookahead(optimizer)
+    if 'average_decay' in kwargs: 
+        print(blue('Using moving average'))
+        optimizer = tfa.optimizers.MovingAverage(
+            optimizer, 
+            average_decay=kwargs.average_decay, 
+            dynamic_decay=kwargs.dynamic_decay
+        )
+
     return optimizer
 
 
@@ -107,7 +115,6 @@ def get_wandb_callback(callbacks_kwargs, train_ds, valid_ds, valid_steps):
 
 class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
     'Applies warmup schedule on the given lr schedule function'
-
     def __init__(self, warmup_lr, lr_scheduler, warmup_steps, power=1.0):
         super().__init__()
         self.warmup_lr = warmup_lr
@@ -120,9 +127,7 @@ class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
             global_step_float = tf.cast(step, tf.float32)
             warmup_steps_float = tf.cast(self.warmup_steps, tf.float32)
             warmup_percent_done = global_step_float / warmup_steps_float
-
             warmup_learning_rate = self.warmup_lr * tf.math.pow(warmup_percent_done, self.power)
-
             return tf.cond(
                 global_step_float < warmup_steps_float,
                 lambda: warmup_learning_rate,
@@ -198,10 +203,10 @@ class CosineDecayRestarts(tf.keras.optimizers.schedules.LearningRateSchedule):
             "t_mul": self._t_mul,
             "m_mul": self._m_mul,
             "alpha": self.alpha,
-            "name": self.name
+            "name": 'CosineLRDecay', 
         }
 
-def plot_first_epoch(lr_scheduler, train_steps, checkpoints_per_epoch): 
+def plot_first_epoch(lr_scheduler, train_steps, checkpoints_per_epoch):
     plt.rcParams['figure.figsize'] = (20,3) # TODO: Move globally
     steps = list(range(0, train_steps, train_steps//checkpoints_per_epoch+1))
     _ = plt.plot([lr_scheduler(x) for x in range(train_steps)], markevery=steps, marker='o')
@@ -212,11 +217,11 @@ def lr_scheduler_factory(lr_warmup, lr_cosine, train_steps):
     first_decay_steps = non_warmup_steps//sum(lr_cosine.step_gamma**i for i in range(1, lr_cosine.num_cycles))+1
     min_lr_ratio = lr_cosine.min_lr / lr_cosine.max_lr
     lr_scheduler = CosineDecayRestarts(
-        lr_cosine.max_lr, 
-        first_decay_steps, 
-        lr_cosine.step_gamma, 
-        lr_cosine.lr_gamma, 
-        min_lr_ratio, 
+        lr_cosine.max_lr,
+        first_decay_steps,
+        lr_cosine.step_gamma,
+        lr_cosine.lr_gamma,
+        min_lr_ratio,
     )
 
     # Add warmup to scheduler

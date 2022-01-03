@@ -135,10 +135,10 @@ def hyperparameters(_, cell):
     get_ipython().user_ns['HP'] = HP
 
 def load_weights_from_wandb(model, weights):
-    if weights is None: 
+    if weights is None:
         print('Not loading weights from wandb')
         return
-    
+
     weights_file, run_name = weights
     print('Restoring weights from run', run_name)
     wandb.restore(weights_file, run_name)
