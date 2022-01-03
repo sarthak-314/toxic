@@ -211,10 +211,14 @@ def plot_first_epoch(lr_scheduler, train_steps, checkpoints_per_epoch):
     steps = list(range(0, train_steps, train_steps//checkpoints_per_epoch+1))
     _ = plt.plot([lr_scheduler(x) for x in range(train_steps)], markevery=steps, marker='o')
 
-def lr_scheduler_factory(lr_warmup, lr_cosine, train_steps):
-    non_warmup_steps = int(train_steps * (1-lr_warmup.epochs))
-    warmup_steps = int(train_steps * lr_warmup.epochs)
+
+def lr_scheduler_factory(warmup_epochs, warmup_power, lr_cosine, train_steps): 
+    non_warmup_steps = int(train_steps * (1-warmup_epochs))
+    warmup_steps = int(train_steps * warmup_epochs)
     first_decay_steps = non_warmup_steps//sum(lr_cosine.step_gamma**i for i in range(1, lr_cosine.num_cycles))+1
+    if warmup_epochs >= 1: 
+        first_decay_steps = train_steps 
+
     min_lr_ratio = lr_cosine.min_lr / lr_cosine.max_lr
     lr_scheduler = CosineDecayRestarts(
         lr_cosine.max_lr,
@@ -229,7 +233,7 @@ def lr_scheduler_factory(lr_warmup, lr_cosine, train_steps):
         warmup_lr=lr_cosine.max_lr,
         lr_scheduler=lr_scheduler,
         warmup_steps=warmup_steps,
-        power=lr_warmup.power,
+        power=warmup_power,
     )
     return lr_scheduler
 
@@ -265,5 +269,7 @@ def lr_scheduler_factory_v1(kwargs):
         )
 
     return lr_scheduler
+
+
 
 
